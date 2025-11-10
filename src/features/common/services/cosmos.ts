@@ -6,10 +6,13 @@ const DB_NAME = process.env.AZURE_COSMOSDB_DB_NAME || "chat";
 const CONTAINER_NAME = process.env.AZURE_COSMOSDB_CONTAINER_NAME || "history";
 const CONFIG_CONTAINER_NAME = process.env.AZURE_COSMOSDB_CONFIG_CONTAINER_NAME || "config";
 const USE_MANAGED_IDENTITIES = process.env.USE_MANAGED_IDENTITIES === "true";
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
 
 const getCosmosCredential = () => {
   if (USE_MANAGED_IDENTITIES) {
-    return new DefaultAzureCredential();
+    return new DefaultAzureCredential({
+      authorityHost: AZURE_AUTHORITY_HOST
+    });
   }
   const key = process.env.AZURE_COSMOSDB_KEY;
   if (!key) {

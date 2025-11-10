@@ -1,8 +1,12 @@
 import { DefaultAzureCredential } from "@azure/identity";
 import { SecretClient } from "@azure/keyvault-secrets";
 
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
+
 export const AzureKeyVaultInstance = () => {
-  const credential = new DefaultAzureCredential();
+  const credential = new DefaultAzureCredential({
+    authorityHost: AZURE_AUTHORITY_HOST
+  });
   const keyVaultName = process.env.AZURE_KEY_VAULT_NAME;
 
   if (!keyVaultName) {

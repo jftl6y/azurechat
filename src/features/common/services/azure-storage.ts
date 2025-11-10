@@ -4,6 +4,7 @@ import { DefaultAzureCredential } from "@azure/identity";
 
 // initialize the blobServiceClient
 const USE_MANAGED_IDENTITIES = process.env.USE_MANAGED_IDENTITIES === "true";
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
 
 const InitBlobServiceClient = () => {
   const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
@@ -11,7 +12,9 @@ const InitBlobServiceClient = () => {
   const endpoint = `https://${accountName}.blob.${endpointSuffix}`;
 
   if (USE_MANAGED_IDENTITIES) {
-    return new BlobServiceClient(endpoint, new DefaultAzureCredential());
+    return new BlobServiceClient(endpoint, new DefaultAzureCredential({
+      authorityHost: AZURE_AUTHORITY_HOST
+    }));
   }
 
   const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;

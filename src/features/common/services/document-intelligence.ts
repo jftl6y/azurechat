@@ -5,6 +5,7 @@ import {
 import { DefaultAzureCredential } from "@azure/identity";
 
 const USE_MANAGED_IDENTITIES = process.env.USE_MANAGED_IDENTITIES === "true";
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
 console.log("Using Managed Identities:", USE_MANAGED_IDENTITIES);
 
 const debug = process.env.DEBUG === "true";
@@ -20,7 +21,9 @@ export const DocumentIntelligenceInstance = () => {
   }
 
   const credential = USE_MANAGED_IDENTITIES
-    ? new DefaultAzureCredential()
+    ? new DefaultAzureCredential({
+        authorityHost: AZURE_AUTHORITY_HOST
+      })
     : new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY);
 
   if (!USE_MANAGED_IDENTITIES && !process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY) {
