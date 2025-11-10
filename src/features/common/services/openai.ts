@@ -3,13 +3,17 @@ import { DefaultAzureCredential, getBearerTokenProvider } from "@azure/identity"
 import { AzureOpenAI } from "openai";
 
 const USE_MANAGED_IDENTITIES = process.env.USE_MANAGED_IDENTITIES === "true";
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
+const COGNITIVE_SERVICES_SCOPE = process.env.COGNITIVE_SERVICES_SCOPE || "https://cognitiveservices.azure.com/.default";
 
 export const OpenAIInstance =  () => {
   const endpointSuffix = process.env.AZURE_OPENAI_API_ENDPOINT_SUFFIX || "openai.azure.com";
   let token = process.env.AZURE_OPENAI_API_KEY;
   if (USE_MANAGED_IDENTITIES) {
-    const credential = new DefaultAzureCredential();
-    const scope = "https://cognitiveservices.azure.com/.default";
+    const credential = new DefaultAzureCredential({
+      authorityHost: AZURE_AUTHORITY_HOST
+    });
+    const scope = COGNITIVE_SERVICES_SCOPE;
     const azureADTokenProvider = getBearerTokenProvider(credential, scope);
     const deployment = process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME;
     const apiVersion = process.env.AZURE_OPENAI_API_VERSION;
@@ -35,8 +39,10 @@ export const OpenAIEmbeddingInstance =  () => {
   const endpointSuffix = process.env.AZURE_OPENAI_API_ENDPOINT_SUFFIX || "openai.azure.com";
   let token = process.env.AZURE_OPENAI_API_KEY;
   if (USE_MANAGED_IDENTITIES) {
-    const credential = new DefaultAzureCredential();
-    const scope = "https://cognitiveservices.azure.com/.default";
+    const credential = new DefaultAzureCredential({
+      authorityHost: AZURE_AUTHORITY_HOST
+    });
+    const scope = COGNITIVE_SERVICES_SCOPE;
     const azureADTokenProvider = getBearerTokenProvider(credential, scope);
     const deployment = process.env.AZURE_OPENAI_API_EMBEDDINGS_DEPLOYMENT_NAME;
     const apiVersion = process.env.AZURE_OPENAI_API_VERSION;
@@ -63,8 +69,10 @@ export const OpenAIDALLEInstance =  () => {
   const endpointSuffix = process.env.AZURE_OPENAI_API_ENDPOINT_SUFFIX || "openai.azure.com";
   let token = process.env.AZURE_OPENAI_DALLE_API_KEY;
   if (USE_MANAGED_IDENTITIES) {
-    const credential = new DefaultAzureCredential();
-    const scope = "https://cognitiveservices.azure.com/.default";
+    const credential = new DefaultAzureCredential({
+      authorityHost: AZURE_AUTHORITY_HOST
+    });
+    const scope = COGNITIVE_SERVICES_SCOPE;
     const azureADTokenProvider = getBearerTokenProvider(credential, scope);
     const deployment = process.env.AZURE_OPENAI_DALLE_API_DEPLOYMENT_NAME;
     const apiVersion = process.env.AZURE_OPENAI_DALLE_API_VERSION || "2023-12-01-preview";
