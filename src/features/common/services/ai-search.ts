@@ -7,6 +7,7 @@ import {
 import { DefaultAzureCredential } from "@azure/identity";
 
 const USE_MANAGED_IDENTITIES = process.env.USE_MANAGED_IDENTITIES === "true";
+const AZURE_AUTHORITY_HOST = process.env.AZURE_AUTHORITY_HOST || "https://login.microsoftonline.com";
 const endpointSuffix = process.env.AZURE_SEARCH_ENDPOINT_SUFFIX || "search.windows.net";
 const apiKey = process.env.AZURE_SEARCH_API_KEY;
 const searchName = process.env.AZURE_SEARCH_NAME;
@@ -16,6 +17,7 @@ const debug = process.env.DEBUG === "true";
 
 console.log("Configuration parameters:", {
   USE_MANAGED_IDENTITIES,
+  AZURE_AUTHORITY_HOST,
   endpointSuffix,
   searchName,
   indexName,
@@ -25,7 +27,9 @@ console.log("Configuration parameters:", {
 export const GetCredential = () => {
   console.log("Getting credential using", USE_MANAGED_IDENTITIES ? "Managed Identities" : "API Key");
   const credential = USE_MANAGED_IDENTITIES
-    ? new DefaultAzureCredential()
+    ? new DefaultAzureCredential({
+        authorityHost: AZURE_AUTHORITY_HOST
+      })
     : new AzureKeyCredential(apiKey);
   
   if (debug) console.log("Credential obtained:", credential);
