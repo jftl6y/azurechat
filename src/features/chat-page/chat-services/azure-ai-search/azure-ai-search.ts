@@ -6,6 +6,7 @@ import { ServerActionResponse } from "@/features/common/server-action-response";
 import {
   AzureAISearchIndexClientInstance,
   AzureAISearchInstance,
+  DirectSearchAPI,
 } from "@/features/common/services/ai-search";
 import { OpenAIEmbeddingInstance } from "@/features/common/services/openai";
 import { uniqueId } from "@/features/common/util";
@@ -81,8 +82,8 @@ export const SimilaritySearch = async (
 
     if (debug) console.log("Embeddings obtained:", embeddings);
 
-    const searchClient = AzureAISearchInstance<AzureSearchDocumentIndex>();
-    const searchResults = await searchClient.search(searchText, {
+    // Use direct REST API to work around Azure Government SDK bug
+    const searchResults = await DirectSearchAPI<AzureSearchDocumentIndex>(searchText, {
       top: k,
       filter: filter,
       vectorSearchOptions: {
@@ -97,13 +98,10 @@ export const SimilaritySearch = async (
       },
     });
 
-    const results: Array<DocumentSearchResponse> = [];
-    for await (const result of searchResults.results) {
-      results.push({
-        score: result.score,
-        document: result.document,
-      });
-    }
+    const results: Array<DocumentSearchResponse> = searchResults.results.map(result => ({
+      score: result.score,
+      document: result.document,
+    }));
 
     if (debug) console.log("SimilaritySearch results:", results);
     return {
@@ -142,50 +140,57 @@ export const ExtensionSimilaritySearch = async (props: {
 
     if (debug) console.log("Embeddings obtained:", embeddings);
 
+    // Use direct REST API to work around Azure Government SDK bug
     const endpointSuffix = process.env.AZURE_SEARCH_ENDPOINT_SUFFIX || "search.windows.net";
-    const endpoint = `https://${searchName}.${endpointSuffix}`;
-    const searchClient = new SearchClient(
-      endpoint,
-      indexName,
-      new AzureKeyCredential(apiKey)
-    );
-
-    const searchResults = await searchClient.search(searchText, {
+    const apiVersion = "2023-11-01";
+    const url = `https://${searchName}.${endpointSuffix}/indexes/${indexName}/docs/search?api-version=${apiVersion}`;
+    
+    const body = {
+      search: searchText,
       top: 3,
-      vectorSearchOptions: {
-        queries: [
-          {
-            vector: embeddings.data[0].embedding,
-            fields: vectors,
-            kind: "vector",
-            kNearestNeighborsCount: 10,
-          },
-        ],
+      vectorQueries: [
+        {
+          vector: embeddings.data[0].embedding,
+          fields: vectors.join(","),
+          kind: "vector",
+          k: 10,
+        },
+      ],
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
       },
+      body: JSON.stringify(body),
     });
 
-    const results: Array<any> = [];
-    for await (const result of searchResults.results) {
-      const item = {
-        score: result.score,
-        document: result.document,
-      };
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Search API error ${response.status}: ${errorText}`);
+    }
 
-      const document = item.document as any;
+    const data = await response.json();
+    
+    const results: Array<any> = (data.value || []).map((item: any) => {
+      const document = { ...item };
       const newDocument: any = {};
 
+      // Remove vector fields from the response
       for (const key in document) {
         const hasKey = vectors.includes(key);
-        if (!hasKey) {
+        if (!hasKey && key !== "@search.score") {
           newDocument[key] = document[key];
         }
       }
 
-      results.push({
-        score: result.score,
+      return {
+        score: item["@search.score"],
         document: newDocument,
-      });
-    }
+      };
+    });
 
     if (debug) console.log("ExtensionSimilaritySearch results:", results);
     return {

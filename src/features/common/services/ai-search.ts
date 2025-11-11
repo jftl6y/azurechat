@@ -24,6 +24,71 @@ console.log("Configuration parameters:", {
   endpoint,
 });
 
+// Direct REST API search to work around Azure Government SDK bug
+export const DirectSearchAPI = async <T>(
+  searchText: string,
+  options: {
+    top?: number;
+    filter?: string;
+    vectorSearchOptions?: {
+      queries: Array<{
+        vector: number[];
+        fields: string[];
+        kind: string;
+        kNearestNeighborsCount: number;
+      }>;
+    };
+  }
+): Promise<{ results: Array<{ score: number; document: T }> }> => {
+  const apiVersion = "2023-11-01";
+  const url = `https://${searchName}.${endpointSuffix}/indexes/${indexName}/docs/search?api-version=${apiVersion}`;
+  
+  const body: any = {
+    search: searchText,
+    top: options.top,
+    filter: options.filter,
+  };
+
+  if (options.vectorSearchOptions) {
+    body.vectorQueries = options.vectorSearchOptions.queries.map(q => ({
+      vector: q.vector,
+      fields: q.fields.join(","),
+      kind: q.kind,
+      k: q.kNearestNeighborsCount,
+    }));
+  }
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "api-key": apiKey || "",
+  };
+
+  if (debug) {
+    console.log("Direct REST API call to:", url);
+    console.log("Request body:", JSON.stringify(body, null, 2));
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Search API error ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  
+  return {
+    results: (data.value || []).map((item: any) => ({
+      score: item["@search.score"],
+      document: item as T,
+    })),
+  };
+};
+
 export const GetCredential = () => {
   console.log("Getting credential using", USE_MANAGED_IDENTITIES ? "Managed Identities" : "API Key");
   const credential = USE_MANAGED_IDENTITIES
