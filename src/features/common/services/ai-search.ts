@@ -76,6 +76,13 @@ export const DirectSearchAPI = async <T>(
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error("DirectSearchAPI Error Details:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: url,
+      errorBody: errorText,
+      headers: Object.fromEntries(response.headers.entries()),
+    });
     throw new Error(`Search API error ${response.status}: ${errorText}`);
   }
 

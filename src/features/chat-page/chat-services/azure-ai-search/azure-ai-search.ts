@@ -169,6 +169,13 @@ export const ExtensionSimilaritySearch = async (props: {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Search API Error Details:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        errorBody: errorText,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
       throw new Error(`Search API error ${response.status}: ${errorText}`);
     }
 
