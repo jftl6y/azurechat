@@ -78,6 +78,7 @@ export const SimilaritySearch = async (
     const embeddings = await openai.embeddings.create({
       input: searchText,
       model: "",
+      dimensions: 1536,
     });
 
     if (debug) console.log("Embeddings obtained:", embeddings);
