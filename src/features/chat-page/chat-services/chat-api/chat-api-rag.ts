@@ -22,10 +22,12 @@ export const ChatApiRAG = async (props: {
 
   const openAI = OpenAIInstance();
 
+  // Note: AAR index doesn't have user or chatThreadId fields, so no filter is applied
+  // This enables global search across all documents in the index
   const documentResponse = await SimilaritySearch(
     userMessage,
     10,
-    `user eq '${await userHashedId()}'`
+    undefined  // No filter - search globally across the AAR index
   );
 
   const documents: ChatCitationModel[] = [];

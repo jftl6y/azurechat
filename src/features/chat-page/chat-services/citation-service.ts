@@ -103,14 +103,18 @@ export const FindCitationByID = async (
 export const FormatCitations = (citation: DocumentSearchResponse[]) => {
   const withoutEmbedding: DocumentSearchResponse[] = [];
   citation.forEach((d) => {
+    // Handle both AAR index schema (Content) and legacy schema (pageContent)
+    const content = d.document.Content || d.document.pageContent || "";
+    const metadata = d.document.metadata || d.document.file_name || d.document.metadata_storage_path || "";
+    
     withoutEmbedding.push({
       score: d.score,
       document: {
-        metadata: d.document.metadata,
-        pageContent: d.document.pageContent,
-        chatThreadId: d.document.chatThreadId,
-        id: "",
-        user: "",
+        metadata: metadata,
+        pageContent: content,  // Map to pageContent for backward compatibility
+        chatThreadId: d.document.chatThreadId || "",
+        id: d.document.id || "",
+        user: d.document.user || "",
       },
     });
   });
