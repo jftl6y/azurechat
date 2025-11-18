@@ -20,11 +20,24 @@ const debug = process.env.DEBUG === "true";
 
 export interface AzureSearchDocumentIndex {
   id: string;
-  pageContent: string;
-  embedding?: number[];
-  user: string;
-  chatThreadId: string;
-  metadata: string;
+  Content: string;  // Main content field (capital C)
+  contentVector?: number[];  // Vector embeddings
+  title?: string;
+  file_name?: string;
+  extracted_fromByline?: string;
+  extracted_toRecipient?: string;
+  extracted_subject?: string;
+  extracted_introduction?: string;
+  extracted_conclusion?: string;
+  extracted_pointOfContact?: string;
+  ai_derived_aar_summary?: string;
+  ai_derived_keywords?: string[];
+  metadata_storage_path?: string;
+  // Legacy fields for backward compatibility with uploaded documents
+  pageContent?: string;
+  user?: string;
+  chatThreadId?: string;
+  metadata?: string;
 }
 
 export type DocumentSearchResponse = {
