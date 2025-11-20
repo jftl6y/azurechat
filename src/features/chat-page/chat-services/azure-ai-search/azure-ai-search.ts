@@ -114,7 +114,7 @@ export const SimilaritySearch = async (
     const openai = OpenAIEmbeddingInstance();
     const embeddings = await openai.embeddings.create({
       input: searchText,
-      model: "",
+      model: process.env.AZURE_OPENAI_API_EMBEDDINGS_DEPLOYMENT_NAME || "",
       dimensions: 3072,  // AAR-TDR index uses 3072-dimension vectors
     });
 
@@ -173,7 +173,7 @@ export const ExtensionSimilaritySearch = async (props: {
 
     const embeddings = await openai.embeddings.create({
       input: searchText,
-      model: "",
+      model: process.env.AZURE_OPENAI_API_EMBEDDINGS_DEPLOYMENT_NAME || "",
       dimensions: 3072,  // AAR-TDR index uses 3072-dimension vectors
     });
 
