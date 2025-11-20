@@ -103,9 +103,19 @@ export const FindCitationByID = async (
 export const FormatCitations = (citation: DocumentSearchResponse[]) => {
   const withoutEmbedding: DocumentSearchResponse[] = [];
   citation.forEach((d) => {
-    // Handle both AAR index schema (Content) and legacy schema (pageContent)
-    const content = d.document.Content || d.document.pageContent || "";
-    const metadata = d.document.metadata || d.document.file_name || d.document.metadata_storage_path || "";
+    // Handle AAR-TDR index schema (prioritize TDR, then AAR, then event content)
+    const content = d.document.combined_tdr_summary_text || 
+                    d.document.combined_aar_document_subject_intro_conclusion_aisummary_text || 
+                    d.document.combined_event_text || 
+                    d.document.pageContent || 
+                    "";
+    
+    // Build metadata from available fields
+    const metadata = d.document.metadata || 
+                    d.document.raw_document_url || 
+                    d.document.extracted_subject || 
+                    d.document.event_id || 
+                    "";
     
     withoutEmbedding.push({
       score: d.score,

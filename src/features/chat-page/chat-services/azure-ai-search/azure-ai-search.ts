@@ -20,19 +20,42 @@ const debug = process.env.DEBUG === "true";
 
 export interface AzureSearchDocumentIndex {
   id: string;
-  Content?: string;  // Main content field (capital C) from AAR index
-  contentVector?: number[];  // Vector embeddings field from AAR index
-  title?: string;
-  file_name?: string;
+  // AAR-TDR Index primary content fields
+  combined_tdr_summary_text?: string;  // Primary content field for TDR summaries
+  combined_aar_document_subject_intro_conclusion_aisummary_text?: string;  // Primary content for AAR documents
+  combined_event_text?: string;  // Event-related content
+  combined_topicarea_ddtmlpf_warfightingarea_tags_text?: string;  // Tags and categories
+  
+  // Vector fields (3072 dimensions)
+  combined_tdr_summary_text_vector?: number[];
+  combined_aar_document_subject_intro_conclusion_aisummary_text_vector?: number[];
+  combined_event_text_vector?: number[];
+  combined_topicarea_ddtmlpf_warfightingarea_tags_text_vector?: number[];
+  
+  // Metadata and extracted fields
+  raw_document_url?: string;
+  event_id?: string;
+  extracted_subject?: string;
+  extracted_topicTitleText?: string;
+  extracted_topicDiscussionText?: string;
+  extracted_topicRecommendationText?: string;
   extracted_fromByline?: string;
   extracted_toRecipient?: string;
-  extracted_subject?: string;
-  extracted_introduction?: string;
-  extracted_conclusion?: string;
   extracted_pointOfContact?: string;
-  ai_derived_aar_summary?: string;
-  ai_derived_keywords?: string[];
-  metadata_storage_path?: string;
+  
+  // AI-derived fields
+  ai_derived_improveSustainRecommendation?: string;
+  ai_derived_missionImpactMeasure?: string;
+  ai_derived_missionImpactSummary?: string;
+  
+  // Tag and classification fields
+  topic_keywords?: string;
+  all_topic_areas?: string;
+  all_warfighting_functions?: string;
+  all_ddtmlpf_areas?: string;
+  all_document_references?: string;
+  all_document_enclosures?: string;
+  
   // Legacy fields for backward compatibility with uploaded documents
   pageContent?: string;
   embedding?: number[];  // Legacy vector field
@@ -92,7 +115,7 @@ export const SimilaritySearch = async (
     const embeddings = await openai.embeddings.create({
       input: searchText,
       model: "",
-      dimensions: 1536,
+      dimensions: 3072,  // AAR-TDR index uses 3072-dimension vectors
     });
 
     if (debug) console.log("Embeddings obtained:", embeddings);
@@ -105,7 +128,7 @@ export const SimilaritySearch = async (
         queries: [
           {
             vector: embeddings.data[0].embedding,
-            fields: ["contentVector"],
+            fields: ["combined_tdr_summary_text_vector"],  // Primary vector field for TDR content
             kind: "vector",
             kNearestNeighborsCount: 10,
           },
@@ -151,7 +174,7 @@ export const ExtensionSimilaritySearch = async (props: {
     const embeddings = await openai.embeddings.create({
       input: searchText,
       model: "",
-      dimensions: 1536,  // Match the AAR index dimension
+      dimensions: 3072,  // AAR-TDR index uses 3072-dimension vectors
     });
 
     if (debug) console.log("Embeddings obtained:", embeddings);
@@ -248,9 +271,9 @@ export const IndexDocuments = async (
         chatThreadId,
         user: await userHashedId(),
         pageContent: doc,  // Legacy field for backward compatibility
-        Content: doc,      // New field matching AAR index schema
+        combined_tdr_summary_text: doc,  // New field matching AAR-TDR index schema
         metadata: fileName,
-        contentVector: [],  // New field matching AAR index schema
+        combined_tdr_summary_text_vector: [],  // Vector field for AAR-TDR index (3072 dimensions)
       };
 
       documentsToIndex.push(docToAdd);
@@ -366,19 +389,19 @@ export const EmbedDocuments = async (
   try {
     if (debug) console.log("Embedding documents:", documents.map((d) => d.id));
     const openai = OpenAIEmbeddingInstance();
-    const contentsToEmbed = documents.map((d) => d.pageContent || d.Content || "");
+    const contentsToEmbed = documents.map((d) => d.pageContent || d.combined_tdr_summary_text || d.combined_aar_document_subject_intro_conclusion_aisummary_text || "");
 
     const embeddings = await openai.embeddings.create({
       input: contentsToEmbed,
       model: process.env.AZURE_OPENAI_API_EMBEDDINGS_DEPLOYMENT_NAME,
-      dimensions: 1536,  // Match the AAR index dimension
+      dimensions: 3072,  // AAR-TDR index uses 3072-dimension vectors
     });
 
     if (debug) console.log("Embeddings received:", embeddings);
 
     embeddings.data.forEach((embedding, index) => {
       documents[index].embedding = embedding.embedding;  // Legacy field
-      documents[index].contentVector = embedding.embedding;  // New field matching AAR index
+      documents[index].combined_tdr_summary_text_vector = embedding.embedding;  // AAR-TDR index vector field
     });
 
     if (debug) console.log("Documents after embedding:", documents);
